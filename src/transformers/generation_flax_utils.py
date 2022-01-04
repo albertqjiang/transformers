@@ -103,6 +103,7 @@ class SampleState:
     is_sent_finished: jnp.ndarray
     prng_key: jnp.ndarray
     model_kwargs: Dict[str, jnp.ndarray]
+    scores: jnp.ndarray
 
 
 @flax.struct.dataclass
@@ -519,6 +520,7 @@ class FlaxGenerationMixin:
             is_sent_finished=is_sent_finished,
             prng_key=prng_key,
             model_kwargs=model_kwargs,
+            scores = jnp.zeros((batch_size, 1))
         )
 
         def sample_search_cond_fn(state):
@@ -541,8 +543,7 @@ class FlaxGenerationMixin:
             logits = logits_warper(logits, logits, state.cur_len)
 
             next_token = jax.random.categorical(prng_key, model_outputs.logits[:, -1], axis=-1)
-            print(next_token.shape)
-            print(logits.shape)
+            next_token_score = jnp.take_along_axis(logits, next_token, axis=1)
 
             next_is_sent_finished = state.is_sent_finished | (next_token == eos_token_id)
             next_token = next_token * ~next_is_sent_finished + pad_token_id * next_is_sent_finished
@@ -558,6 +559,7 @@ class FlaxGenerationMixin:
                 is_sent_finished=next_is_sent_finished,
                 model_kwargs=next_model_kwargs,
                 prng_key=prng_key_next,
+                scores=state.scores + next_token_score
             )
 
         # The very first prompt often has sequence length > 1, so run outside of `lax.while_loop` to comply with TPU
