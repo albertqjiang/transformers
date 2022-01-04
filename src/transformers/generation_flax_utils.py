@@ -543,7 +543,7 @@ class FlaxGenerationMixin:
             logits = logits_warper(logits, logits, state.cur_len)
 
             next_token = jax.random.categorical(prng_key, model_outputs.logits[:, -1], axis=-1)
-            next_token_score = jnp.take_along_axis(logits, next_token, axis=1)
+            next_token_score = jnp.take_along_axis(logits, jnp.expand_dims(next_token, 1), axis=1)
 
             next_is_sent_finished = state.is_sent_finished | (next_token == eos_token_id)
             next_token = next_token * ~next_is_sent_finished + pad_token_id * next_is_sent_finished
