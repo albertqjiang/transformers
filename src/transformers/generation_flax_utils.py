@@ -67,6 +67,7 @@ class FlaxSampleOutput(ModelOutput):
     """
 
     sequences: jnp.ndarray = None
+    scores: jnp.ndarray = None
 
 
 @flax.struct.dataclass
@@ -571,7 +572,7 @@ class FlaxGenerationMixin:
         else:
             state = lax.while_loop(sample_search_cond_fn, sample_search_body_fn, state)
 
-        return FlaxSampleOutput(sequences=state.sequences)
+        return FlaxSampleOutput(sequences=state.sequences, scores=state.scores)
 
     def _beam_search(
         self,
